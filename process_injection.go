@@ -6,6 +6,13 @@ import (
 	"unsafe"
 )
 
+const (
+	MEM_COMMIT           = 0x1000
+	MEM_RESERVE          = 0x2000
+	PROCESS_VM_WRITE     = 0x0020
+	PROCESS_VM_OPERATION = 0x0008
+)
+
 func processInjection(procId uintptr, buf *byte, size uintptr) {
 	kernel32 := syscall.NewLazyDLL("kernel32.dll")
 
