@@ -50,7 +50,7 @@ type PEB struct {
 
 func GetPEB() uintptr // Declared without body
 
-func getNtdllBaseFromPEB() uintptr {
+func GetNtdllBaseFromPEB() uintptr {
 	pebAddr := GetPEB()
 	peb := (*PEB)(unsafe.Pointer(pebAddr))
 

@@ -1,4 +1,4 @@
-module main
+module go_to_h3ll
 
 go 1.24.0
 
@@ -14,4 +14,3 @@ require (
 	github.com/secDre4mer/pkcs7 v0.0.0-20240322103146-665324a4461d // indirect
 	golang.org/x/text v0.7.0 // indirect
 )
-

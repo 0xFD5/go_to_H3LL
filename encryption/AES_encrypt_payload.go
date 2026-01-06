@@ -2,7 +2,7 @@ package encryption
 
 import "fmt"
 
-func encrypt() {
+func Encrypt() {
 	key, err := GenerateKey()
 	if err != nil {
 		panic(err)

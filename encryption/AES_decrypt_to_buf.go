@@ -1,6 +1,6 @@
 package encryption
 
-func decrypt() []byte {
+func Decrypt() []byte {
 
 	filename := "encryption_details.txt"
 	loadedKey, loadedIV, loadedCiphertext, err := LoadEncryptionDetails(filename)

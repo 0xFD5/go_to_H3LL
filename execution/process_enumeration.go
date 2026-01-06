@@ -32,7 +32,7 @@ type PROCESSENTRY32 struct {
 
 // gives all processes if provided an empty string
 // or the PID if provided a processName
-func processEnumeration(strProcessName string) uint32 {
+func ProcessEnumeration(strProcessName string) uint32 {
 	// Take a snapshot of all processes
 	snapshot, _, _ := procCreateToolhelp32Snapshot.Call(TH32CS_SNAPPROCESS, 0)
 	if snapshot < 0 {

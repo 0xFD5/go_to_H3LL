@@ -13,7 +13,7 @@ const (
 	PROCESS_VM_OPERATION = 0x0008
 )
 
-func processInjection(procId uintptr, buf *byte, size uintptr) {
+func ProcessInjection(procId uintptr, buf *byte, size uintptr) {
 
 	kernel32 := syscall.NewLazyDLL("kernel32.dll")
 	procOpenProcess := kernel32.NewProc("OpenProcess")
