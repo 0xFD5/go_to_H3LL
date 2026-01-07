@@ -4,3 +4,4 @@ TEXT ·GetPEB(SB), NOSPLIT, $0-8
     MOVQ 0x60(GS), AX
     MOVQ AX, ret+0(FP)
     RET
+//compiler needs an empty line but github removes it apparently so be careful 
