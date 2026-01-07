@@ -2,6 +2,7 @@ package execution
 
 import (
 	"fmt"
+	"go_to_h3ll/core"
 	"syscall"
 	"unsafe"
 )
@@ -17,19 +18,6 @@ const (
 	TH32CS_SNAPPROCESS = 0x00000002
 )
 
-type PROCESSENTRY32 struct {
-	DwSize              uint32
-	CntUsage            uint32
-	Th32ProcessID       uint32
-	Th32DefaultHeapID   uintptr
-	Th32ModuleID        uint32
-	CntThreads          uint32
-	Th32ParentProcessID uint32
-	PcPriClassBase      int32
-	DwFlags             uint32
-	SzExeFile           [260]uint16
-}
-
 // gives all processes if provided an empty string
 // or the PID if provided a processName
 func ProcessEnumeration(strProcessName string) uint32 {
@@ -41,7 +29,7 @@ func ProcessEnumeration(strProcessName string) uint32 {
 	}
 	defer syscall.CloseHandle(syscall.Handle(snapshot))
 
-	var entry PROCESSENTRY32
+	var entry core.PROCESSENTRY32
 	entry.DwSize = uint32(unsafe.Sizeof(entry))
 
 	if len(strProcessName) == 0 {
