@@ -1,8 +1,99 @@
+//https://ntdoc.m417z.com/
+//https://www.vergiliusproject.com/
+//https://doxygen.reactos.org/
+
 package core
 
 import "unsafe"
 
 const IMAGE_DIRECTORY_ENTRY_EXPORT = 0
+
+//SYSTEM_INFORMATION_CLASS
+const SystemProcessInformation = 5
+
+// NTSTATUS helpers
+const STATUS_INFO_LENGTH_MISMATCH int64 = -(0x3FFFFFF5)
+const STATUS_SUCCESS = 0x00000000
+const PROCESS_QUERY_INFORMATION = 0x0400
+const PROCESS_VM_READ = 0x0010
+const (
+	ProcessBasicInformation       = 0
+	ProcessWow64Information       = 26
+	ProcessImageFileName          = 27
+	ProcessCommandLineInformation = 60
+)
+
+// NTSTATUS is a 32-bit value
+type NTSTATUS uint32
+
+// PROCESS_BASIC_INFORMATION (x64, no reserved fields)
+type PROCESS_BASIC_INFORMATION struct {
+	ExitStatus                   NTSTATUS // process exit status
+	PebBaseAddress               uintptr  // pointer to PEB
+	AffinityMask                 uintptr  // KAFFINITY (mask of CPUs)
+	BasePriority                 int32    // KPRIORITY
+	UniqueProcessId              uintptr  // HANDLE (actually PID)
+	InheritedFromUniqueProcessId uintptr  // HANDLE (parent PID)
+}
+
+/*----------------------------------------------------------------------------*/
+
+type CURDIR struct {
+	DosPath UNICODE_STRING
+	Handle  uintptr
+}
+
+type RTL_DRIVE_LETTER_CURDIR struct {
+	Flags     uint16
+	Length    uint16
+	TimeStamp int32
+	DosPath   UNICODE_STRING
+}
+
+// RTL_USER_PROCESS_PARAMETERS (x64)
+type RTL_USER_PROCESS_PARAMETERS struct {
+	MaximumLength                    uint32
+	Length                           uint32
+	Flags                            uint32
+	DebugFlags                       uint32
+	ConsoleHandle                    uintptr
+	ConsoleFlags                     uint32
+	StandardInput                    uintptr
+	StandardOutput                   uintptr
+	StandardError                    uintptr
+	CurrentDirectory                 CURDIR
+	DllPath                          UNICODE_STRING
+	ImagePathName                    UNICODE_STRING
+	CommandLine                      UNICODE_STRING
+	Environment                      uintptr
+	StartingX                        uint32
+	StartingY                        uint32
+	CountX                           uint32
+	CountY                           uint32
+	CountCharsX                      uint32
+	CountCharsY                      uint32
+	FillAttribute                    uint32
+	WindowFlags                      uint32
+	ShowWindowFlags                  uint32
+	WindowTitle                      UNICODE_STRING
+	DesktopInfo                      UNICODE_STRING
+	ShellInfo                        UNICODE_STRING
+	RuntimeData                      UNICODE_STRING
+	CurrentDirectories               [32]RTL_DRIVE_LETTER_CURDIR // RTL_MAX_DRIVE_LETTERS = 32
+	EnvironmentSize                  uintptr
+	EnvironmentVersion               uintptr
+	PackageDependencyData            uintptr
+	ProcessGroupId                   uint32
+	LoaderThreads                    uint32
+	RedirectionDllName               UNICODE_STRING
+	HeapPartitionName                UNICODE_STRING
+	DefaultThreadpoolCpuSetMasks     *uint64
+	DefaultThreadpoolCpuSetMaskCount uint32
+	DefaultThreadpoolThreadMaximum   uint32
+	HeapMemoryTypeMask               uint32
+}
+
+/*---------------------------------------------------------------------------*/
 
 type UNICODE_STRING struct {
 	Length        uint16
@@ -36,15 +127,41 @@ type PEB_LDR_DATA struct {
 	InInitializationOrderModuleList LIST_ENTRY
 }
 
-// Minimal PEB structure
+// BOOLEAN in Windows is a byte
+type BOOLEAN byte
+
+// PEB (partial, enough for ProcessParameters walking), ADD MORE IF YOU SEE FIT
 type PEB struct {
-	InheritedAddressSpace    uint8
-	ReadImageFileExecOptions uint8
-	BeingDebugged            uint8
-	BitField                 uint8
-	Mutant                   unsafe.Pointer
-	ImageBaseAddress         unsafe.Pointer
+	InheritedAddressSpace    BOOLEAN
+	ReadImageFileExecOptions BOOLEAN
+	BeingDebugged            BOOLEAN
+	BitField                 BOOLEAN
+	Mutant                   uintptr
+	ImageBaseAddress         uintptr
 	Ldr                      *PEB_LDR_DATA
+	ProcessParameters        uintptr // -> RTL_USER_PROCESS_PARAMETERS
+	SubSystemData            uintptr
+	ProcessHeap              uintptr
+	FastPebLock              uintptr
+	AtlThunkSListPtr         uintptr
+	IFEOKey                  uintptr
+	CrossProcessFlags        uint32
+	KernelCallbackTable      uintptr
+	SystemReserved           uint32
+	AtlThunkSListPtr32       uint32
+	ApiSetMap                uintptr
+	TlsExpansionCounter      uint32
+	TlsBitmap                uintptr
+	TlsBitmapBits            [2]uint32
+	ReadOnlySharedMemoryBase uintptr
+	SharedData               uintptr
+	ReadOnlyStaticServerData *uintptr
+	AnsiCodePageData         uintptr
+	OemCodePageData          uintptr
+	UnicodeCaseTableData     uintptr
+	NumberOfProcessors       uint32
+	NtGlobalFlag             uint32
+	// ... (omit rest unless you need them)
 }
 
 // IMAGE_DOS_HEADER (from winnt.h)
@@ -168,4 +285,62 @@ type OBJECT_ATTRIBUTES struct {
 	Attributes               uint32
 	SecurityDescriptor       uintptr
 	SecurityQualityOfService uintptr
+}
+
+type LARGE_INTEGER struct {
+	QuadPart int64
+}
+
+// SYSTEM_PROCESS_INFORMATION
+type SYSTEM_PROCESS_INFORMATION struct {
+	NextEntryOffset              uint32
+	NumberOfThreads              uint32
+	WorkingSetPrivateSize        uint64
+	HardFaultCount               uint32
+	NumberOfThreadsHighWatermark uint32
+	CycleTime                    uint64
+	CreateTime                   LARGE_INTEGER
+	UserTime                     LARGE_INTEGER
+	KernelTime                   LARGE_INTEGER
+	ImageName                    UNICODE_STRING
+	BasePriority                 int32
+	UniqueProcessId              uintptr
+	InheritedFromUniqueProcessId uintptr
+	HandleCount                  uint32
+	SessionId                    uint32
+	UniqueProcessKey             uintptr
+	PeakVirtualSize              uintptr
+	VirtualSize                  uintptr
+	PageFaultCount               uint32
+	PeakWorkingSetSize           uintptr
+	WorkingSetSize               uintptr
+	QuotaPeakPagedPoolUsage      uintptr
+	QuotaPagedPoolUsage          uintptr
+	QuotaPeakNonPagedPoolUsage   uintptr
+	QuotaNonPagedPoolUsage       uintptr
+	PagefileUsage                uintptr
+	PeakPagefileUsage            uintptr
+	PrivatePageCount             uintptr
+	ReadOperationCount           LARGE_INTEGER
+	WriteOperationCount          LARGE_INTEGER
+	OtherOperationCount          LARGE_INTEGER
+	ReadTransferCount            LARGE_INTEGER
+	WriteTransferCount           LARGE_INTEGER
+	OtherTransferCount           LARGE_INTEGER
+	// Threads array follows in memory
+}
+
+// SYSTEM_THREAD_INFORMATION
+type SYSTEM_THREAD_INFORMATION struct {
+	KernelTime      LARGE_INTEGER
+	UserTime        LARGE_INTEGER
+	CreateTime      LARGE_INTEGER
+	WaitTime        uint32
+	StartAddress    uintptr
+	ClientId        CLIENT_ID
+	Priority        int32
+	BasePriority    int32
+	ContextSwitches uint32
+	ThreadState     uint32
+	WaitReason      uint32
 }

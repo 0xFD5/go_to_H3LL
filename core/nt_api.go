@@ -157,6 +157,61 @@ func NtWaitForSingleObject(
 	return int32(r) // NTSTATUS
 }
 
+func NtQuerySystemInformation(
+	addr uintptr,
+	systemInformationClass uint32,
+	systemInformation unsafe.Pointer,
+	systemInformationLength uint32,
+	returnLength *uint32,
+) int32 {
+	r, _, _ := syscall.SyscallN(
+		addr,
+		uintptr(systemInformationClass),
+		uintptr(systemInformation),
+		uintptr(systemInformationLength),
+		uintptr(unsafe.Pointer(returnLength)),
+	)
+	return int32(r)
+}
+
+func NtQueryInformationProcess(
+	addr uintptr,
+	hProcess uintptr,
+	processInfoClass uint32,
+	processInfo unsafe.Pointer,
+	processInfoLength uint32,
+	returnLength *uint32,
+) int32 {
+	r, _, _ := syscall.SyscallN(
+		addr,
+		uintptr(unsafe.Pointer(hProcess)),
+		uintptr(processInfoClass),
+		uintptr(processInfo),
+		uintptr(processInfoLength),
+		uintptr(unsafe.Pointer(returnLength)),
+	)
+	return int32(r)
+}
+
+func NtReadVirtualMemory(
+	addr uintptr,
+	hProcess uintptr,
+	baseAddress uintptr,
+	buffer unsafe.Pointer,
+	size uintptr,
+	bytesRead *uintptr,
+) int32 {
+	r1, _, _ := syscall.SyscallN(
+		addr,
+		uintptr(unsafe.Pointer(hProcess)),
+		baseAddress,
+		uintptr(buffer),
+		size,
+		uintptr(unsafe.Pointer(bytesRead)),
+	)
+	return int32(r1)
+}
+
 func CheckLoadNtFunctions(hNtdll uintptr) {
 
 	// Assuming we have a handle to Ntdll(could be manually resolved, unhooked, whatever..)
@@ -181,20 +236,36 @@ func CheckLoadNtFunctions(hNtdll uintptr) {
 	if err != nil {
 		panic(err)
 	}
-	ntWaitForSingleObject, err := GetProcAddressFromPEB(hNtdll, "NtWaitForSingleObject")
+	ntWaitForSingleObjectAddr, err := GetProcAddressFromPEB(hNtdll, "NtWaitForSingleObject")
+	if err != nil {
+		panic(err)
+	}
+	ntQuerySystemInformationAddr, err := GetProcAddressFromPEB(hNtdll, "NtQuerySystemInformation")
+	if err != nil {
+		panic(err)
+	}
+	ntQueryInformationProcess, err := GetProcAddressFromPEB(hNtdll, "NtQueryInformationProcess")
+	if err != nil {
+		panic(err)
+	}
+	ntReadVirtualMemory, err := GetProcAddressFromPEB(hNtdll, "NtReadVirtualMemory")
 	if err != nil {
 		panic(err)
 	}
 
 	// Print resolved addresses (no execution in this demo)
 	fmt.Printf("\n*-----------------------fetched NTAPI functions-----------------------*\n")
-	fmt.Printf("ntdll:                 0x%X\n", hNtdll)
-	fmt.Printf("NtOpenProcess:         0x%X\n", ntOpenProcessAddr)
-	fmt.Printf("NtAllocateVirtualMemory:0x%X\n", ntAllocateVirtualMemoryAddr)
-	fmt.Printf("NtProtectVirtualMemory: 0x%X\n", ntProtectVirtualMemoryAddr)
-	fmt.Printf("NtWriteVirtualMemory:   0x%X\n", ntWriteVirtualMemoryAddr)
-	fmt.Printf("NtCreateThreadEx:       0x%X\n", ntCreateThreadExAddr)
-	fmt.Printf("NtWaitForSingleObject:       0x%X\n", ntWaitForSingleObject)
+	fmt.Printf("ntdll:                            0x%X\n", hNtdll)
+	fmt.Printf("NtOpenProcess:                    0x%X\n", ntOpenProcessAddr)
+	fmt.Printf("NtAllocateVirtualMemory:          0x%X\n", ntAllocateVirtualMemoryAddr)
+	fmt.Printf("NtProtectVirtualMemory:           0x%X\n", ntProtectVirtualMemoryAddr)
+	fmt.Printf("NtWriteVirtualMemory:             0x%X\n", ntWriteVirtualMemoryAddr)
+	fmt.Printf("NtCreateThreadEx:                 0x%X\n", ntCreateThreadExAddr)
+	fmt.Printf("NtWaitForSingleObject:            0x%X\n", ntWaitForSingleObjectAddr)
+	fmt.Printf("NtQuerySystemInformation:         0x%X\n", ntQuerySystemInformationAddr)
+	fmt.Printf("NtQueryInformationProcess:        0x%X\n", ntQueryInformationProcess)
+	fmt.Printf("NtReadVirtualMemory:              0x%X\n", ntReadVirtualMemory)
+
 	fmt.Printf("*----------------/////////DO WHAT YOU WANT////////////-----------------*\n")
 
 	// Example placeholder (safe, not performing remote operations):

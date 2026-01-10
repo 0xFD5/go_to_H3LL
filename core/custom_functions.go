@@ -83,3 +83,22 @@ func ptrToString(addr uintptr) string {
 	}
 	return string(bytes)
 }
+
+func UnicodeStringToGoString(u UNICODE_STRING) string {
+	if u.Buffer == nil || u.Length == 0 {
+		return ""
+	}
+	return syscall.UTF16ToString(
+		(*[1 << 16]uint16)(unsafe.Pointer(u.Buffer))[:u.Length/2],
+	)
+}
+
+func InitObjectAttributes(objName *UNICODE_STRING, attributes uint32, rootDir uintptr) OBJECT_ATTRIBUTES {
+	return OBJECT_ATTRIBUTES{
+		Length:        uint32(unsafe.Sizeof(OBJECT_ATTRIBUTES{})),
+		RootDirectory: rootDir,
+		ObjectName:    uintptr(unsafe.Pointer(objName)),
+		Attributes:    attributes,
+		// SecurityDescriptor and SecurityQualityOfService left nil
+	}
+}
